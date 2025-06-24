@@ -144,17 +144,30 @@ else:
     sys.exit(1)
 messages = [
         types.Content(role="user", parts=[types.Part(text=prompt)]),]
-response = client.models.generate_content(model="gemini-2.0-flash-001", contents=messages, config=types.GenerateContentConfig(tools=[available_functions],system_instruction=system_prompt))
-if response.function_calls:
-    result = call_function(response.candidates[0].content.parts[0].function_call, verbose)
-    if result:
-        if result.parts[0].function_response.response:
-            if verbose:
-                print(f"-> {result.parts[0].function_response.response}")
-        else:
-            raise Exception("FATAL: no result from the function call")
-else:
-    print(response.text)
+
+MAX_CALLS = 20
+i = 0
+while (i < 20):
+    response = client.models.generate_content(model="gemini-2.0-flash-001", contents=messages, config=types.GenerateContentConfig(tools=[available_functions],system_instruction=system_prompt))
+    if response.function_calls:
+        for candidate in response.candidates:
+            messages.append(candidate.content)
+
+        result = call_function(response.candidates[0].content.parts[0].function_call, verbose)
+        if result:
+            messages.append(result)
+            if result.parts[0].function_response.response:
+                if verbose:
+                    print(f"-> {result.parts[0].function_response.response}")
+            else:
+                raise Exception("FATAL: no result from the function call")
+    else:
+        print(response.text)
+        break
+    i += 1
+
+
+
 if verbose:
     print(f"User prompt: {prompt}")
     if response.usage_metadata:
