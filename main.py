@@ -149,10 +149,9 @@ MAX_CALLS = 20
 i = 0
 while (i < 20):
     response = client.models.generate_content(model="gemini-2.0-flash-001", contents=messages, config=types.GenerateContentConfig(tools=[available_functions],system_instruction=system_prompt))
-    if response.function_calls:
+    if response.function_calls and response.candidates[0].content.parts[0].function_call:
         for candidate in response.candidates:
             messages.append(candidate.content)
-
         result = call_function(response.candidates[0].content.parts[0].function_call, verbose)
         if result:
             messages.append(result)
